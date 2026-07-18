@@ -24,11 +24,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.peppedess.monopolybank.ui.BankViewModel
+import com.peppedess.monopolybank.ui.screens.HistoryScreen
 import com.peppedess.monopolybank.ui.screens.HomeScreen
 import com.peppedess.monopolybank.ui.screens.PlayerDetailScreen
 import com.peppedess.monopolybank.ui.screens.SetupScreen
 import com.peppedess.monopolybank.ui.screens.TransferScreen
 import com.peppedess.monopolybank.ui.theme.MonopolyBankTheme
+
+private const val NO_ID = Long.MIN_VALUE
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,7 +54,6 @@ fun AppNav(vm: BankViewModel) {
     val hasGame by vm.hasGame.collectAsState()
 
     if (hasGame == null) {
-        // Splash con LoadingIndicator Expressive
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             LoadingIndicator()
         }
@@ -81,14 +83,32 @@ fun AppNav(vm: BankViewModel) {
             HomeScreen(
                 vm,
                 onPlayer = { nav.navigate("player/$it") },
-                onTransfer = { nav.navigate("transfer") },
+                onTransfer = { from, to ->
+                    nav.navigate("transfer?from=${from ?: NO_ID}&to=${to ?: NO_ID}")
+                },
+                onHistory = { nav.navigate("history") },
                 onNewGame = {
                     nav.navigate("setup") { popUpTo("home") { inclusive = true } }
                 }
             )
         }
-        composable("transfer") {
-            TransferScreen(vm) { nav.popBackStack() }
+        composable(
+            "transfer?from={from}&to={to}",
+            arguments = listOf(
+                navArgument("from") { type = NavType.LongType; defaultValue = NO_ID },
+                navArgument("to") { type = NavType.LongType; defaultValue = NO_ID }
+            )
+        ) { entry ->
+            val from = entry.arguments?.getLong("from") ?: NO_ID
+            val to = entry.arguments?.getLong("to") ?: NO_ID
+            TransferScreen(
+                vm,
+                initialFrom = from.takeIf { it != NO_ID },
+                initialTo = to.takeIf { it != NO_ID }
+            ) { nav.popBackStack() }
+        }
+        composable("history") {
+            HistoryScreen(vm) { nav.popBackStack() }
         }
         composable(
             "player/{id}",

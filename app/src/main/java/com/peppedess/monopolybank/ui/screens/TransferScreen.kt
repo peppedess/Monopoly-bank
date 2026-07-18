@@ -1,8 +1,14 @@
 package com.peppedess.monopolybank.ui.screens
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,12 +28,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -45,11 +52,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.peppedess.monopolybank.data.Player
 import com.peppedess.monopolybank.data.SpecialIds
 import com.peppedess.monopolybank.ui.BankViewModel
 import com.peppedess.monopolybank.ui.components.PlayerAvatar
@@ -69,11 +76,18 @@ private val Banknotes = listOf(
     500L to MonopolyGold
 )
 
+private val QuickNotes = listOf("Affitto 🏠", "Acquisto proprietà 📜", "Casa 🏡", "Albergo 🏨", "Imprevisto ❓", "Probabilità 🎁")
+
 private data class Party(val id: Long, val label: String, val token: String, val color: Color)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TransferScreen(vm: BankViewModel, onBack: () -> Unit) {
+fun TransferScreen(
+    vm: BankViewModel,
+    initialFrom: Long?,
+    initialTo: Long?,
+    onBack: () -> Unit
+) {
     val players by vm.players.collectAsState()
     val state by vm.state.collectAsState()
 
@@ -87,8 +101,8 @@ fun TransferScreen(vm: BankViewModel, onBack: () -> Unit) {
         }
     }
 
-    var fromId by remember { mutableStateOf(SpecialIds.BANK) }
-    var toId by remember { mutableStateOf<Long?>(null) }
+    var fromId by remember { mutableStateOf(initialFrom ?: SpecialIds.BANK) }
+    var toId by remember { mutableStateOf(initialTo) }
     var amount by remember { mutableStateOf(0L) }
     var note by remember { mutableStateOf("") }
 
@@ -113,15 +127,20 @@ fun TransferScreen(vm: BankViewModel, onBack: () -> Unit) {
                 .padding(pad)
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            PartyPicker("Da", parties, fromId) { fromId = it }
-            Icon(
-                Icons.AutoMirrored.Filled.ArrowForward, null,
-                tint = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.align(Alignment.CenterHorizontally).size(28.dp)
-            )
-            PartyPicker("A", parties.filter { it.id != fromId }, toId ?: Long.MIN_VALUE) { toId = it }
+            PartyPicker("Chi paga", parties, fromId) { fromId = it; if (toId == it) toId = null }
+
+            // Inverti mittente/destinatario
+            FilledIconButton(
+                onClick = {
+                    val t = toId
+                    if (t != null) { toId = fromId; fromId = t }
+                },
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) { Icon(Icons.Default.SwapVert, "Inverti") }
+
+            PartyPicker("Chi riceve", parties.filter { it.id != fromId }, toId ?: Long.MIN_VALUE) { toId = it }
 
             // ── Importo con banconote ──
             Card(
@@ -129,34 +148,32 @@ fun TransferScreen(vm: BankViewModel, onBack: () -> Unit) {
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Importo", style = MaterialTheme.typography.titleMedium)
+                    val animAmount by animateIntAsState(amount.toInt(), tween(250), label = "amt")
                     Text(
-                        amount.formatMoney(),
+                        animAmount.toLong().formatMoney(),
                         style = MaterialTheme.typography.displayMedium,
                         fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = if (amount > 0) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
-                    Text("Tocca le banconote per aggiungerle, tieni conto tu del resto 😉",
+                    Text("Tocca le banconote per comporre l'importo",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth())
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(Banknotes) { (value, color) ->
-                            Box(
-                                Modifier
-                                    .size(width = 88.dp, height = 48.dp)
-                                    .background(color, RoundedCornerShape(8.dp))
-                                    .border(2.dp, MonopolyInk.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                                    .clickable { amount += value },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("M $value", fontWeight = FontWeight.Black, color = MonopolyInk, fontSize = 16.sp)
-                            }
+                            Banknote(value, color) { amount += value }
                         }
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("×2" to { amount *= 2 }, "÷2" to { amount /= 2 }, "C" to { amount = 0L }).forEach { (lbl, op) ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        listOf<Pair<String, () -> Unit>>(
+                            "×2" to { amount *= 2 },
+                            "÷2" to { amount /= 2 },
+                            "C" to { amount = 0L }
+                        ).forEach { (lbl, op) ->
                             Box(
                                 Modifier
                                     .size(48.dp)
@@ -168,16 +185,31 @@ fun TransferScreen(vm: BankViewModel, onBack: () -> Unit) {
                         OutlinedTextField(
                             value = if (amount == 0L) "" else amount.toString(),
                             onValueChange = { amount = it.filter(Char::isDigit).toLongOrNull() ?: 0L },
-                            label = { Text("Manuale") },
+                            label = { Text("Digita") },
                             singleLine = true,
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(16.dp)
                         )
                     }
+                    // Causali rapide
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(QuickNotes) { q ->
+                            Box(
+                                Modifier
+                                    .background(
+                                        if (note == q) MaterialTheme.colorScheme.primaryContainer
+                                        else MaterialTheme.colorScheme.surfaceContainer,
+                                        RoundedCornerShape(12.dp)
+                                    )
+                                    .clickable { note = if (note == q) "" else q }
+                                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                            ) { Text(q, style = MaterialTheme.typography.labelLarge) }
+                        }
+                    }
                     OutlinedTextField(
                         value = note,
                         onValueChange = { note = it },
-                        label = { Text("Causale (es. Affitto Parco della Vittoria)") },
+                        label = { Text("Causale personalizzata") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp)
@@ -198,10 +230,31 @@ fun TransferScreen(vm: BankViewModel, onBack: () -> Unit) {
                     .fillMaxWidth()
                     .height(56.dp)
             ) {
-                Text("CONFERMA  ·  ${amount.formatMoney()}", fontWeight = FontWeight.Black, letterSpacing = 1.sp)
+                Text(
+                    if (amount > 0) "CONFERMA  ·  ${amount.formatMoney()}" else "CONFERMA",
+                    fontWeight = FontWeight.Black, letterSpacing = 1.sp
+                )
             }
             Spacer(Modifier.height(24.dp))
         }
+    }
+}
+
+@Composable
+private fun Banknote(value: Long, color: Color, onClick: () -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) 0.88f else 1f, spring(), label = "note")
+    Box(
+        Modifier
+            .size(width = 88.dp, height = 48.dp)
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .background(color, RoundedCornerShape(8.dp))
+            .border(2.dp, MonopolyInk.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+            .clickable(interactionSource = interaction, indication = null) { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Text("M $value", fontWeight = FontWeight.Black, color = MonopolyInk, fontSize = 16.sp)
     }
 }
 
