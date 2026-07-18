@@ -26,7 +26,9 @@ import androidx.navigation.navArgument
 import com.peppedess.monopolybank.ui.BankViewModel
 import com.peppedess.monopolybank.ui.screens.HistoryScreen
 import com.peppedess.monopolybank.ui.screens.HomeScreen
+import com.peppedess.monopolybank.ui.screens.JoinScreen
 import com.peppedess.monopolybank.ui.screens.PlayerDetailScreen
+import com.peppedess.monopolybank.ui.screens.RemoteHomeScreen
 import com.peppedess.monopolybank.ui.screens.SetupScreen
 import com.peppedess.monopolybank.ui.screens.TransferScreen
 import com.peppedess.monopolybank.ui.theme.MonopolyBankTheme
@@ -75,8 +77,24 @@ fun AppNav(vm: BankViewModel) {
         }
     ) {
         composable("setup") {
-            SetupScreen(vm) {
+            SetupScreen(
+                vm,
+                onJoin = { nav.navigate("join") }
+            ) {
                 nav.navigate("home") { popUpTo("setup") { inclusive = true } }
+            }
+        }
+        composable("join") {
+            JoinScreen(
+                onBack = { nav.popBackStack() },
+                onConnected = { nav.navigate("remote") { popUpTo("join") { inclusive = true } } }
+            )
+        }
+        composable("remote") {
+            RemoteHomeScreen {
+                nav.navigate(if (hasGame == true) "home" else "setup") {
+                    popUpTo("remote") { inclusive = true }
+                }
             }
         }
         composable("home") {

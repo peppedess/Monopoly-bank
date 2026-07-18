@@ -64,7 +64,7 @@ data class DraftPlayer(val name: String, val token: String, val colorIndex: Int)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SetupScreen(vm: BankViewModel, onStarted: () -> Unit) {
+fun SetupScreen(vm: BankViewModel, onJoin: () -> Unit = {}, onStarted: () -> Unit) {
     val drafts = remember { mutableStateListOf<DraftPlayer>() }
     var name by remember { mutableStateOf("") }
     var tokenIdx by remember { mutableStateOf(0) }
@@ -98,6 +98,30 @@ fun SetupScreen(vm: BankViewModel, onStarted: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item { Spacer(Modifier.height(4.dp)) }
+
+            // ── Unisciti a un tavolo esistente ──
+            item {
+                Card(
+                    onClick = onJoin,
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
+                ) {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("📡", fontSize = 28.sp)
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Unisciti a un tavolo",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer)
+                            Text("Un altro telefono fa da Banca? Entra dal tuo.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer)
+                        }
+                        Text("→", fontSize = 24.sp,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer)
+                    }
+                }
+            }
 
             // ── Nuovo giocatore ──
             item {

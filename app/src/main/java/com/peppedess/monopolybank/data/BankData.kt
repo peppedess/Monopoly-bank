@@ -137,6 +137,7 @@ class BankRepository(private val dao: BankDao) {
 
     fun player(id: Long) = dao.player(id)
     fun txnsFor(id: Long) = dao.txnsFor(id)
+    suspend fun stateOnce() = dao.stateOnce()
 
     suspend fun newGame(names: List<Triple<String, String, Int>>, startBalance: Long, goAmount: Long, parkingEnabled: Boolean) {
         dao.resetGame()

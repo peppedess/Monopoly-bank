@@ -27,6 +27,8 @@ import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.CurrencyExchange
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.RestartAlt
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -57,10 +59,13 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.peppedess.monopolybank.MonopolyApp
 import com.peppedess.monopolybank.data.SpecialIds
+import com.peppedess.monopolybank.net.HostServer
 import com.peppedess.monopolybank.ui.BankViewModel
 import com.peppedess.monopolybank.ui.components.PlayerAvatar
 import com.peppedess.monopolybank.ui.formatMoney
@@ -79,6 +84,10 @@ fun HomeScreen(
 ) {
     val players by vm.players.collectAsState()
     val state by vm.state.collectAsState()
+    val app = LocalContext.current.applicationContext as MonopolyApp
+    val hosting by app.hostServer.running.collectAsState()
+    val clientCount by app.hostServer.clientCount.collectAsState()
+    val hostIp = remember(hosting) { if (hosting) HostServer.localIp() else null }
     val snackState = remember { SnackbarHostState() }
     val snackMsg by vm.snack.collectAsState()
     var showReset by remember { mutableStateOf(false) }
@@ -145,8 +154,36 @@ fun HomeScreen(
                                     color = Color.White.copy(alpha = 0.85f)
                                 )
                             }
+                            IconButton(onClick = {
+                                if (hosting) app.hostServer.stop() else app.hostServer.start()
+                            }) {
+                                Icon(
+                                    if (hosting) Icons.Default.Wifi else Icons.Default.WifiOff,
+                                    "Tavolo in rete",
+                                    tint = if (hosting) Color(0xFFFEF200) else Color.White
+                                )
+                            }
                             IconButton(onClick = { showReset = true }) {
                                 Icon(Icons.Default.RestartAlt, "Nuova partita", tint = Color.White)
+                            }
+                        }
+                        if (hosting) {
+                            Spacer(Modifier.height(8.dp))
+                            Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(14.dp))
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("📡", fontSize = 18.sp)
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    "Tavolo aperto · $clientCount dispositivi" +
+                                        (hostIp?.let { " · IP $it" } ?: ""),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = Color.White
+                                )
                             }
                         }
                         Spacer(Modifier.height(16.dp))
