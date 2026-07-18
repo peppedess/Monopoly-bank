@@ -36,6 +36,13 @@ class BankViewModel(val repo: BankRepository) : ViewModel() {
     fun consumeSnack() { _snack.value = null }
     private fun toast(msg: String) { _snack.value = msg }
 
+    /** Ultimi importi usati: gli affitti si ripetono, un tap e via */
+    private val _recentAmounts = MutableStateFlow<List<Long>>(emptyList())
+    val recentAmounts: StateFlow<List<Long>> = _recentAmounts
+    private fun rememberAmount(a: Long) {
+        _recentAmounts.value = (listOf(a) + _recentAmounts.value.filter { it != a }).take(4)
+    }
+
     fun newGame(players: List<Triple<String, String, Int>>, startBalance: Long, goAmount: Long, parking: Boolean, onDone: () -> Unit) {
         viewModelScope.launch {
             repo.newGame(players, startBalance, goAmount, parking)
@@ -46,6 +53,7 @@ class BankViewModel(val repo: BankRepository) : ViewModel() {
     fun transfer(fromId: Long, toId: Long, amount: Long, note: String) {
         viewModelScope.launch {
             repo.transfer(fromId, toId, amount, note)
+            rememberAmount(amount)
             toast("$note · ${amount.formatMoney()}")
         }
     }

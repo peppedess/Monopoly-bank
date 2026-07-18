@@ -8,6 +8,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -69,7 +71,7 @@ private val QuickBanknotes = listOf(
     500L to MonopolyGold
 )
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun RemoteHomeScreen(onLeave: () -> Unit) {
     val app = LocalContext.current.applicationContext as MonopolyApp
@@ -143,27 +145,36 @@ fun RemoteHomeScreen(onLeave: () -> Unit) {
                                         containerColor = Color.White,
                                         contentColor = MonopolyGreenDark
                                     ),
-                                    shape = RoundedCornerShape(14.dp),
-                                    modifier = Modifier.weight(1f)
-                                ) { Text("➡️ VIA", fontWeight = FontWeight.Black, maxLines = 1) }
+                                    shape = RoundedCornerShape(18.dp),
+                                    modifier = Modifier.weight(1f).height(60.dp)
+                                ) {
+                                    Text("➡️ VIA", style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Black, maxLines = 1)
+                                }
                                 Button(
                                     onClick = { payDialog = true },
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = Color.White,
                                         contentColor = MonopolyGreenDark
                                     ),
-                                    shape = RoundedCornerShape(14.dp),
-                                    modifier = Modifier.weight(1f)
-                                ) { Text("💸 Paga", fontWeight = FontWeight.Black, maxLines = 1) }
+                                    shape = RoundedCornerShape(18.dp),
+                                    modifier = Modifier.weight(1f).height(60.dp)
+                                ) {
+                                    Text("💸 Paga", style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Black, maxLines = 1)
+                                }
                                 Button(
                                     onClick = { receiveDialog = true },
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = Color.White,
                                         contentColor = MonopolyGreenDark
                                     ),
-                                    shape = RoundedCornerShape(14.dp),
-                                    modifier = Modifier.weight(1f)
-                                ) { Text("💰 Incassa", fontWeight = FontWeight.Black, maxLines = 1) }
+                                    shape = RoundedCornerShape(18.dp),
+                                    modifier = Modifier.weight(1f).height(60.dp)
+                                ) {
+                                    Text("💰 Incassa", style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Black, maxLines = 1)
+                                }
                             }
                         }
                         // Pozzo Parcheggio
@@ -337,6 +348,7 @@ fun RemoteHomeScreen(onLeave: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AmountDialog(
     title: String,
@@ -378,29 +390,43 @@ private fun AmountDialog(
                     fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.primary
                 )
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    items(QuickBanknotes) { (v, c) ->
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    maxItemsInEachRow = 4,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    QuickBanknotes.forEach { (v, c) ->
                         Box(
                             Modifier
-                                .size(width = 64.dp, height = 36.dp)
-                                .background(c, RoundedCornerShape(6.dp))
-                                .border(1.dp, MonopolyInk.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+                                .weight(1f)
+                                .height(52.dp)
+                                .background(c, RoundedCornerShape(8.dp))
+                                .border(1.dp, MonopolyInk.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
                                 .clickable { amount += v },
                             contentAlignment = Alignment.Center
-                        ) { Text("M $v", fontWeight = FontWeight.Bold, color = MonopolyInk, fontSize = 12.sp) }
+                        ) { Text("M $v", fontWeight = FontWeight.Black, color = MonopolyInk, fontSize = 15.sp) }
+                    }
+                    Box(
+                        Modifier
+                            .weight(1f)
+                            .height(52.dp)
+                            .background(MaterialTheme.colorScheme.errorContainer, RoundedCornerShape(8.dp))
+                            .clickable { amount = 0L },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("C", fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.onErrorContainer, fontSize = 17.sp)
                     }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = { amount = 0L }) { Text("C") }
-                    OutlinedTextField(
-                        value = if (amount == 0L) "" else amount.toString(),
-                        onValueChange = { amount = it.filter(Char::isDigit).toLongOrNull() ?: 0L },
-                        label = { Text("Importo") },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                }
+                OutlinedTextField(
+                    value = if (amount == 0L) "" else amount.toString(),
+                    onValueChange = { amount = it.filter(Char::isDigit).toLongOrNull() ?: 0L },
+                    label = { Text("Importo") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
                 OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
@@ -412,13 +438,21 @@ private fun AmountDialog(
             }
         },
         confirmButton = {
-            FilledTonalButton(
+            Button(
                 onClick = {
-                    val t = selected ?: return@FilledTonalButton
+                    val t = selected ?: return@Button
                     onConfirm(t, amount, note.ifBlank { "Trasferimento" })
                 },
-                enabled = selected != null && amount > 0
-            ) { Text("Conferma ${if (amount > 0) amount.formatMoney() else ""}") }
+                enabled = selected != null && amount > 0,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.height(52.dp)
+            ) {
+                Text(
+                    if (amount > 0) "Conferma ${amount.formatMoney()}" else "Conferma",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Black
+                )
+            }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } }
     )

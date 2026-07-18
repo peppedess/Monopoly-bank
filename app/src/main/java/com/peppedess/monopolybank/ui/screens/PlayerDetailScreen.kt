@@ -1,6 +1,8 @@
 package com.peppedess.monopolybank.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,17 +13,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LoadingIndicator
@@ -54,7 +54,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun PlayerDetailScreen(vm: BankViewModel, playerId: Long, onBack: () -> Unit) {
     val player by remember(playerId) { vm.repo.player(playerId) }.collectAsStateWithLifecycle(null)
@@ -161,19 +161,31 @@ fun PlayerDetailScreen(vm: BankViewModel, playerId: Long, onBack: () -> Unit) {
                 Text("Azioni rapide", style = MaterialTheme.typography.titleMedium)
             }
             item {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    maxItemsInEachRow = 2,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     val go = state?.goAmount ?: 200L
                     val quick = buildList {
-                        add("➡️ VIA +${go}" to { vm.passGo(p.id) })
-                        add("💸 Tassa patrimoniale 100" to { vm.payTax(p.id, 100, "Tassa patrimoniale 💸") })
-                        add("🧾 Tassa di lusso 200" to { vm.payTax(p.id, 200, "Tassa di lusso 🧾") })
-                        add("🚔 Cauzione prigione 50" to { vm.payTax(p.id, 50, "Uscita di prigione 🚔") })
+                        add("➡️ VIA +$go" to { vm.passGo(p.id) })
+                        add("💸 Patrimoniale 100" to { vm.payTax(p.id, 100, "Tassa patrimoniale 💸") })
+                        add("🧾 Lusso 200" to { vm.payTax(p.id, 200, "Tassa di lusso 🧾") })
+                        add("🚔 Prigione 50" to { vm.payTax(p.id, 50, "Uscita di prigione 🚔") })
                         if ((state?.parkingEnabled == true) && (state?.parkingPot ?: 0) > 0) {
-                            add("🅿️ Riscuoti Parcheggio" to { vm.collectParking(p.id) })
+                            add("🅿️ Riscuoti pozzo" to { vm.collectParking(p.id) })
                         }
                     }
-                    items(quick) { (label, action) ->
-                        AssistChip(onClick = action, label = { Text(label) })
+                    quick.forEach { (label, action) ->
+                        FilledTonalButton(
+                            onClick = action,
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.weight(1f).height(52.dp)
+                        ) {
+                            Text(label, style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold, maxLines = 1)
+                        }
                     }
                 }
             }

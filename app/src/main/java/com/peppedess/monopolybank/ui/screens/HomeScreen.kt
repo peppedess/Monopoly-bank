@@ -321,22 +321,31 @@ fun HomeScreen(
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     FilledTonalButton(
                                         onClick = { vm.passGo(p.id) },
-                                        shape = RoundedCornerShape(14.dp),
+                                        shape = RoundedCornerShape(16.dp),
                                         contentPadding = ButtonDefaults.TextButtonContentPadding,
-                                        modifier = Modifier.weight(1f)
-                                    ) { Text("➡️ VIA", maxLines = 1) }
+                                        modifier = Modifier.weight(1f).height(52.dp)
+                                    ) {
+                                        Text("➡️ VIA", style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Black, maxLines = 1)
+                                    }
                                     FilledTonalButton(
                                         onClick = { onTransfer(p.id, null) },
-                                        shape = RoundedCornerShape(14.dp),
+                                        shape = RoundedCornerShape(16.dp),
                                         contentPadding = ButtonDefaults.TextButtonContentPadding,
-                                        modifier = Modifier.weight(1f)
-                                    ) { Text("💸 Paga", maxLines = 1) }
+                                        modifier = Modifier.weight(1f).height(52.dp)
+                                    ) {
+                                        Text("💸 Paga", style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Black, maxLines = 1)
+                                    }
                                     FilledTonalButton(
                                         onClick = { onTransfer(SpecialIds.BANK, p.id) },
-                                        shape = RoundedCornerShape(14.dp),
+                                        shape = RoundedCornerShape(16.dp),
                                         contentPadding = ButtonDefaults.TextButtonContentPadding,
-                                        modifier = Modifier.weight(1f)
-                                    ) { Text("💰 Incassa", maxLines = 1) }
+                                        modifier = Modifier.weight(1f).height(52.dp)
+                                    ) {
+                                        Text("💰 Incassa", style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Black, maxLines = 1)
+                                    }
                                 }
                             }
                         }
